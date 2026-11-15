@@ -1,0 +1,34 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// The unique constraint on `key` makes concurrent claims safe.
+// `lockedUntil` is a lease: while it is in the future, one request owns the key;
+// once it passes, any request may take over (the work is safe to re-run).
+model IdempotencyKey {
+  id             String    @id @default(uuid())
+  key            String    @unique
+  requestHash    String
+  status         String // "processing" | "completed"
+  lockedUntil    DateTime?
+  responseStatus Int?
+  responseBody   Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Charge {
+  id                String   @id @default(uuid())
+  idempotencyKey    String   @unique
+  processorChargeId String
+  amount            Int
+  currency          String
+  customerId        String
+  status            String // "succeeded"
+  createdAt         DateTime @default(now())
+}
